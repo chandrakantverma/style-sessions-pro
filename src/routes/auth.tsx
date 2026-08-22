@@ -1,0 +1,177 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/useAuth";
+
+export const Route = createFileRoute("/auth")({
+  head: () => ({
+    meta: [
+      { title: "Sign In — Bladeroom" },
+      {
+        name: "description",
+        content:
+          "Sign in or create a Bladeroom account to book barbershop appointments, or register as a shop owner.",
+      },
+      { property: "og:title", content: "Sign In — Bladeroom" },
+      { property: "og:description", content: "Access your Bladeroom bookings or shop dashboard." },
+    ],
+  }),
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [role, setRole] = useState<"customer" | "owner">("customer");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (user) void navigate({ to: role === "owner" ? "/dashboard" : "/my-bookings" });
+  }, [user, navigate, role]);
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: { full_name: fullName, intended_role: role },
+          },
+        });
+        if (error) throw error;
+        if (data.session) {
+          await supabase.from("user_roles").insert({ user_id: data.session.user.id, role });
+          toast.success("Welcome to Bladeroom");
+        } else {
+          setSent(true);
+          toast.success("Check your email to confirm your account");
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        toast.success("Signed in");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleGoogle() {
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      toast.error("Google sign-in failed");
+      return;
+    }
+    if (result.redirected) return;
+  }
+
+  return (
+    <div className="mx-auto flex max-w-md flex-col px-5 py-20">
+      <p className="overline">{role === "owner" ? "Shop owner" : "Customer"}</p>
+      <h1 className="mt-3 text-5xl">{mode === "signin" ? "Sign in" : "Create account"}</h1>
+      <p className="mt-3 text-sm text-muted-foreground">
+        {role === "owner"
+          ? "Publish your shop, build your menu and manage your book."
+          : "Book chairs, track appointments and cancel when plans change."}
+      </p>
+
+      <div className="mt-8 grid grid-cols-2 gap-2">
+        {(["customer", "owner"] as const).map((option) => (
+          <button
+            key={option}
+            onClick={() => setRole(option)}
+            className={`rounded border px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] transition-colors ${
+              role === option
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:border-primary/60"
+            }`}
+          >
+            {option === "customer" ? "I'm booking" : "I own a shop"}
+          </button>
+        ))}
+      </div>
+
+      <form onSubmit={handleSubmit} className="panel mt-6 space-y-4 rounded-lg p-6">
+        {mode === "signup" && (
+          <div>
+            <Label htmlFor="fullName">Full name</Label>
+            <Input
+              id="fullName"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="mt-1.5"
+              required
+            />
+          </div>
+        )}
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mt-1.5"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1.5"
+            minLength={6}
+            required
+          />
+        </div>
+        <Button type="submit" className="w-full" size="lg" disabled={busy}>
+          {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+        </Button>
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground">or</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <Button type="button" variant="outline" className="w-full" onClick={() => void handleGoogle()}>
+          Continue with Google
+        </Button>
+
+        {sent && (
+          <p className="text-xs text-muted-foreground">
+            We sent a confirmation link to {email}. Click it to finish signing up.
+          </p>
+        )}
+      </form>
+
+      <button
+        onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+        className="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-primary"
+      >
+        {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
+      </button>
+    </div>
+  );
+}
