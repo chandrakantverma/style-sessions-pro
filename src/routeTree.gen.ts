@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as MyBookingsRouteImport } from './routes/my-bookings'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as StylesRouteImport } from './routes/styles'
+import { Route as ShopsIndexRouteImport } from './routes/shops.index'
+import { Route as ShopsShopIdRouteImport } from './routes/shops.$shopId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyBookingsRoute = MyBookingsRouteImport.update({
+  id: '/my-bookings',
+  path: '/my-bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StylesRoute = StylesRouteImport.update({
+  id: '/styles',
+  path: '/styles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopsIndexRoute = ShopsIndexRouteImport.update({
+  id: '/shops/',
+  path: '/shops/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopsShopIdRoute = ShopsShopIdRouteImport.update({
+  id: '/shops/$shopId',
+  path: '/shops/$shopId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/my-bookings': typeof MyBookingsRoute
+  '/pricing': typeof PricingRoute
+  '/styles': typeof StylesRoute
+  '/shops/$shopId': typeof ShopsShopIdRoute
+  '/shops/': typeof ShopsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/my-bookings': typeof MyBookingsRoute
+  '/pricing': typeof PricingRoute
+  '/styles': typeof StylesRoute
+  '/shops/$shopId': typeof ShopsShopIdRoute
+  '/shops': typeof ShopsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/my-bookings': typeof MyBookingsRoute
+  '/pricing': typeof PricingRoute
+  '/styles': typeof StylesRoute
+  '/shops/$shopId': typeof ShopsShopIdRoute
+  '/shops/': typeof ShopsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/my-bookings'
+    | '/pricing'
+    | '/styles'
+    | '/shops/$shopId'
+    | '/shops/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/my-bookings'
+    | '/pricing'
+    | '/styles'
+    | '/shops/$shopId'
+    | '/shops'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/my-bookings'
+    | '/pricing'
+    | '/styles'
+    | '/shops/$shopId'
+    | '/shops/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  MyBookingsRoute: typeof MyBookingsRoute
+  PricingRoute: typeof PricingRoute
+  StylesRoute: typeof StylesRoute
+  ShopsShopIdRoute: typeof ShopsShopIdRoute
+  ShopsIndexRoute: typeof ShopsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-bookings': {
+      id: '/my-bookings'
+      path: '/my-bookings'
+      fullPath: '/my-bookings'
+      preLoaderRoute: typeof MyBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/styles': {
+      id: '/styles'
+      path: '/styles'
+      fullPath: '/styles'
+      preLoaderRoute: typeof StylesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shops/': {
+      id: '/shops/'
+      path: '/shops'
+      fullPath: '/shops/'
+      preLoaderRoute: typeof ShopsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shops/$shopId': {
+      id: '/shops/$shopId'
+      path: '/shops/$shopId'
+      fullPath: '/shops/$shopId'
+      preLoaderRoute: typeof ShopsShopIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
+  MyBookingsRoute: MyBookingsRoute,
+  PricingRoute: PricingRoute,
+  StylesRoute: StylesRoute,
+  ShopsShopIdRoute: ShopsShopIdRoute,
+  ShopsIndexRoute: ShopsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
