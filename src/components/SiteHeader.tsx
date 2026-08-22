@@ -38,7 +38,7 @@ export function SiteHeader() {
           {user ? (
             <>
               <Button asChild variant="ghost" size="sm">
-                <Link to="/dashboard">Dashboard</Link>
+                <Link to="/my-bookings">My Bookings</Link>
               </Button>
               <Button size="sm" variant="outline" onClick={() => void signOut()}>
                 Sign out
@@ -79,11 +79,11 @@ export function SiteHeader() {
               </Link>
             ))}
             <Link
-              to={user ? "/dashboard" : "/auth"}
+              to={user ? "/my-bookings" : "/auth"}
               onClick={() => setOpen(false)}
               className="text-sm font-bold uppercase tracking-[0.2em] text-primary"
             >
-              {user ? "Dashboard" : "Sign in"}
+              {user ? "My Bookings" : "Sign in"}
             </Link>
           </div>
         </div>

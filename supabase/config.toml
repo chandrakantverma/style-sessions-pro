@@ -1,1 +1,19 @@
-project_id = "izdcytuomfryfikoybjz"
+project_id = "yeyndeoshfpjzifkbadl"
+
+[auth]
+site_url = "http://localhost:8080"
+
+# Additional redirect URLs allowed for OAuth callbacks.
+# Add your production domain here when you deploy.
+additional_redirect_urls = [
+  "http://localhost:8080/auth/callback",
+  "https://your-production-domain.com/auth/callback",
+]
+
+[auth.external.google]
+enabled = true
+# Set these via environment variables — never hardcode credentials.
+# Get them from: https://console.cloud.google.com/ → APIs & Services → Credentials
+# Authorised redirect URI to add in GCP: https://<your-project-ref>.supabase.co/auth/v1/callback
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"

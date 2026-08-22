@@ -97,7 +97,7 @@ function PricingPage() {
               className="mt-8 w-full"
               variant={plan.featured ? "default" : "outline"}
             >
-              <Link to={user ? "/dashboard" : "/auth"} search={{ mode: "owner" } as never}>
+              <Link to={user ? "/my-bookings" : "/auth"} search={{ mode: "owner" } as never}>
                 Start 14-day trial
               </Link>
             </Button>

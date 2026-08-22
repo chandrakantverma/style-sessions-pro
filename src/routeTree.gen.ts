@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as MyBookingsRouteImport } from './routes/my-bookings'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as StylesRouteImport } from './routes/styles'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ShopsIndexRouteImport } from './routes/shops.index'
 import { Route as ShopsShopIdRouteImport } from './routes/shops.$shopId'
 
@@ -42,6 +43,11 @@ const StylesRoute = StylesRouteImport.update({
   path: '/styles',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 const ShopsIndexRoute = ShopsIndexRouteImport.update({
   id: '/shops/',
   path: '/shops/',
@@ -55,29 +61,32 @@ const ShopsShopIdRoute = ShopsShopIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/shops/$shopId': typeof ShopsShopIdRoute
   '/shops/': typeof ShopsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/shops/$shopId': typeof ShopsShopIdRoute
   '/shops': typeof ShopsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/shops/$shopId': typeof ShopsShopIdRoute
   '/shops/': typeof ShopsIndexRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/my-bookings'
     | '/pricing'
     | '/styles'
+    | '/auth/callback'
     | '/shops/$shopId'
     | '/shops/'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/my-bookings'
     | '/pricing'
     | '/styles'
+    | '/auth/callback'
     | '/shops/$shopId'
     | '/shops'
   id:
@@ -107,13 +118,14 @@ export interface FileRouteTypes {
     | '/my-bookings'
     | '/pricing'
     | '/styles'
+    | '/auth/callback'
     | '/shops/$shopId'
     | '/shops/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   MyBookingsRoute: typeof MyBookingsRoute
   PricingRoute: typeof PricingRoute
   StylesRoute: typeof StylesRoute
@@ -158,6 +170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StylesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/shops/': {
       id: '/shops/'
       path: '/shops'
@@ -175,9 +194,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthCallbackRoute: typeof AuthCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthCallbackRoute: AuthCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   MyBookingsRoute: MyBookingsRoute,
   PricingRoute: PricingRoute,
   StylesRoute: StylesRoute,

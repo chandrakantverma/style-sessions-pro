@@ -2,10 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GoogleIcon } from "@/components/GoogleIcon";
 import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/auth")({
@@ -36,7 +36,7 @@ function AuthPage() {
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
-    if (user) void navigate({ to: role === "owner" ? "/dashboard" : "/my-bookings" });
+    if (user) void navigate({ to: "/my-bookings" });
   }, [user, navigate, role]);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -73,14 +73,22 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    // Encode the intended role in the callback URL so we can assign it
+    // to the user_roles table after the OAuth round-trip completes.
+    const callbackUrl = `${window.location.origin}/auth/callback?role=${role}`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: callbackUrl,
+        queryParams: {
+          // Prompt account selection every time so users can switch accounts
+          prompt: "select_account",
+        },
+      },
     });
-    if (result.error) {
-      toast.error("Google sign-in failed");
-      return;
+    if (error) {
+      toast.error("Google sign-in failed. Please try again.");
     }
-    if (result.redirected) return;
   }
 
   return (
@@ -155,7 +163,8 @@ function AuthPage() {
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <Button type="button" variant="outline" className="w-full" onClick={() => void handleGoogle()}>
+        <Button type="button" variant="outline" className="w-full gap-2" onClick={() => void handleGoogle()}>
+          <GoogleIcon className="size-4 shrink-0" />
           Continue with Google
         </Button>
 
