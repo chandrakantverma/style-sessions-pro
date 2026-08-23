@@ -13,10 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as MyBookingsRouteImport } from './routes/my-bookings'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as StylesRouteImport } from './routes/styles'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
+import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardAvailabilityRouteImport } from './routes/dashboard/availability'
 import { Route as DashboardBookingsRouteImport } from './routes/dashboard/bookings'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
@@ -45,6 +47,11 @@ const PricingRoute = PricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StylesRoute = StylesRouteImport.update({
   id: '/styles',
   path: '/styles',
@@ -63,6 +70,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
 const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
   id: '/dashboard/_layout',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardAccountRoute = DashboardAccountRouteImport.update({
+  id: '/dashboard/account',
+  path: '/dashboard/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardAvailabilityRoute = DashboardAvailabilityRouteImport.update({
@@ -106,9 +118,11 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
+  '/profile': typeof ProfileRoute
   '/styles': typeof StylesRoute
   '/auth/callback': typeof AuthCallbackRouteWithChildren
   '/dashboard': typeof DashboardLayoutRoute
+  '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
   '/dashboard/bookings': typeof DashboardBookingsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
@@ -123,9 +137,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
+  '/profile': typeof ProfileRoute
   '/styles': typeof StylesRoute
   '/auth/callback': typeof AuthCallbackRouteWithChildren
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
   '/dashboard/bookings': typeof DashboardBookingsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
@@ -140,9 +156,11 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
+  '/profile': typeof ProfileRoute
   '/styles': typeof StylesRoute
   '/auth/callback': typeof AuthCallbackRouteWithChildren
   '/dashboard/_layout': typeof DashboardLayoutRoute
+  '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
   '/dashboard/bookings': typeof DashboardBookingsRoute
   '/dashboard/profile': typeof DashboardProfileRoute
@@ -159,9 +177,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/my-bookings'
     | '/pricing'
+    | '/profile'
     | '/styles'
     | '/auth/callback'
     | '/dashboard'
+    | '/dashboard/account'
     | '/dashboard/availability'
     | '/dashboard/bookings'
     | '/dashboard/profile'
@@ -176,9 +196,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/my-bookings'
     | '/pricing'
+    | '/profile'
     | '/styles'
     | '/auth/callback'
     | '/dashboard'
+    | '/dashboard/account'
     | '/dashboard/availability'
     | '/dashboard/bookings'
     | '/dashboard/profile'
@@ -192,9 +214,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/my-bookings'
     | '/pricing'
+    | '/profile'
     | '/styles'
     | '/auth/callback'
     | '/dashboard/_layout'
+    | '/dashboard/account'
     | '/dashboard/availability'
     | '/dashboard/bookings'
     | '/dashboard/profile'
@@ -210,8 +234,10 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   MyBookingsRoute: typeof MyBookingsRoute
   PricingRoute: typeof PricingRoute
+  ProfileRoute: typeof ProfileRoute
   StylesRoute: typeof StylesRoute
   DashboardLayoutRoute: typeof DashboardLayoutRoute
+  DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAvailabilityRoute: typeof DashboardAvailabilityRoute
   DashboardBookingsRoute: typeof DashboardBookingsRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
@@ -251,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/styles': {
       id: '/styles'
       path: '/styles'
@@ -277,6 +310,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/account': {
+      id: '/dashboard/account'
+      path: '/dashboard/account'
+      fullPath: '/dashboard/account'
+      preLoaderRoute: typeof DashboardAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/availability': {
@@ -358,8 +398,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   MyBookingsRoute: MyBookingsRoute,
   PricingRoute: PricingRoute,
+  ProfileRoute: ProfileRoute,
   StylesRoute: StylesRoute,
   DashboardLayoutRoute: DashboardLayoutRoute,
+  DashboardAccountRoute: DashboardAccountRoute,
   DashboardAvailabilityRoute: DashboardAvailabilityRoute,
   DashboardBookingsRoute: DashboardBookingsRoute,
   DashboardProfileRoute: DashboardProfileRoute,

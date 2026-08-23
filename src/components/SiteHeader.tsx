@@ -7,6 +7,7 @@ import {
   Clock,
   Store,
   LogOut,
+  UserCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const CUSTOMER_NAV = [
   { to: "/shops", label: "Browse Shops", Icon: Scissors },
   { to: "/styles", label: "Styles", Icon: Scissors },
   { to: "/my-bookings", label: "My Bookings", Icon: CalendarCheck },
+  { to: "/profile", label: "Profile", Icon: UserCircle },
 ];
 
 // Owner nav links — all inside dashboard
@@ -33,6 +35,7 @@ const OWNER_NAV = [
   { to: "/dashboard/availability", label: "Availability", Icon: Clock },
   { to: "/dashboard/services", label: "Services", Icon: Scissors },
   { to: "/dashboard/profile", label: "Shop Profile", Icon: Store },
+  { to: "/dashboard/account", label: "My Account", Icon: UserCircle },
 ];
 
 export function SiteHeader() {
@@ -121,6 +124,12 @@ export function SiteHeader() {
             </>
           ) : (
             <>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/profile">
+                  <UserCircle className="mr-1.5 size-4" />
+                  Profile
+                </Link>
+              </Button>
               <Button asChild size="sm">
                 <Link to="/my-bookings">
                   <CalendarCheck className="mr-1.5 size-4" />

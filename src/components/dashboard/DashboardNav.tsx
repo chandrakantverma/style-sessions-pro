@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { CalendarCheck, Clock, Scissors, Store, LogOut } from "lucide-react";
+import { CalendarCheck, Clock, Scissors, Store, LogOut, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   { to: "/dashboard/availability", label: "Availability", Icon: Clock },
   { to: "/dashboard/services", label: "Services", Icon: Scissors },
   { to: "/dashboard/profile", label: "Shop Profile", Icon: Store },
+  { to: "/dashboard/account", label: "My Account", Icon: UserCircle },
 ] as const;
 
 type Props = {
