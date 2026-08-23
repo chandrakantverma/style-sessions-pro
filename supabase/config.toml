@@ -7,7 +7,7 @@ site_url = "http://localhost:8080"
 # Add your production domain here when you deploy.
 additional_redirect_urls = [
   "http://localhost:8080/auth/callback",
-  "https://your-production-domain.com/auth/callback",
+  "https://style-sessions-pro.vercel.app/auth/callback",
 ]
 
 [auth.external.google]

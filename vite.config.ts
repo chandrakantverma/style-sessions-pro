@@ -15,7 +15,13 @@ import path from "path";
 export default defineConfig({
   plugins: [
     tanstackStart({
-      server: { entry: "src/server.ts" },
+      server: {
+        entry: "src/server.ts",
+        // Use Vercel preset when deploying, local node server in dev.
+        // NITRO_PRESET=vercel is set automatically by Vercel's build environment.
+        // You can also set it manually: NITRO_PRESET=vercel npm run build
+        preset: process.env["NITRO_PRESET"] ?? "node-server",
+      },
     }),
     react(),
     tailwindcss(),
