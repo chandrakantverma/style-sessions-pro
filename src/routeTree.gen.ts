@@ -23,6 +23,7 @@ import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile
 import { Route as DashboardServicesRouteImport } from './routes/dashboard/services'
 import { Route as ShopsIndexRouteImport } from './routes/shops.index'
 import { Route as ShopsShopIdRouteImport } from './routes/shops.$shopId'
+import { Route as AuthCallbackRoleRouteImport } from './routes/auth.callback.$role'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,11 @@ const ShopsShopIdRoute = ShopsShopIdRouteImport.update({
   path: '/shops/$shopId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoleRoute = AuthCallbackRoleRouteImport.update({
+  id: '/$role',
+  path: '/$role',
+  getParentRoute: () => AuthCallbackRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,7 +107,7 @@ export interface FileRoutesByFullPath {
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/callback': typeof AuthCallbackRouteWithChildren
   '/dashboard': typeof DashboardLayoutRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
   '/dashboard/bookings': typeof DashboardBookingsRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/shops/$shopId': typeof ShopsShopIdRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/shops/': typeof ShopsIndexRoute
+  '/auth/callback/$role': typeof AuthCallbackRoleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -117,7 +124,7 @@ export interface FileRoutesByTo {
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/callback': typeof AuthCallbackRouteWithChildren
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
   '/dashboard/bookings': typeof DashboardBookingsRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/dashboard/services': typeof DashboardServicesRoute
   '/shops/$shopId': typeof ShopsShopIdRoute
   '/shops': typeof ShopsIndexRoute
+  '/auth/callback/$role': typeof AuthCallbackRoleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -133,7 +141,7 @@ export interface FileRoutesById {
   '/my-bookings': typeof MyBookingsRoute
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/callback': typeof AuthCallbackRouteWithChildren
   '/dashboard/_layout': typeof DashboardLayoutRoute
   '/dashboard/availability': typeof DashboardAvailabilityRoute
   '/dashboard/bookings': typeof DashboardBookingsRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/shops/$shopId': typeof ShopsShopIdRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/shops/': typeof ShopsIndexRoute
+  '/auth/callback/$role': typeof AuthCallbackRoleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/shops/$shopId'
     | '/dashboard/'
     | '/shops/'
+    | '/auth/callback/$role'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/dashboard/services'
     | '/shops/$shopId'
     | '/shops'
+    | '/auth/callback/$role'
   id:
     | '__root__'
     | '/'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/shops/$shopId'
     | '/dashboard/'
     | '/shops/'
+    | '/auth/callback/$role'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -309,15 +321,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopsShopIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback/$role': {
+      id: '/auth/callback/$role'
+      path: '/$role'
+      fullPath: '/auth/callback/$role'
+      preLoaderRoute: typeof AuthCallbackRoleRouteImport
+      parentRoute: typeof AuthCallbackRoute
+    }
   }
 }
 
+interface AuthCallbackRouteChildren {
+  AuthCallbackRoleRoute: typeof AuthCallbackRoleRoute
+}
+
+const AuthCallbackRouteChildren: AuthCallbackRouteChildren = {
+  AuthCallbackRoleRoute: AuthCallbackRoleRoute,
+}
+
+const AuthCallbackRouteWithChildren = AuthCallbackRoute._addFileChildren(
+  AuthCallbackRouteChildren,
+)
+
 interface AuthRouteChildren {
-  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthCallbackRoute: typeof AuthCallbackRouteWithChildren
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
-  AuthCallbackRoute: AuthCallbackRoute,
+  AuthCallbackRoute: AuthCallbackRouteWithChildren,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

@@ -79,15 +79,16 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
-    // Encode the intended role in the callback URL so we can assign it
-    // to the user_roles table after the OAuth round-trip completes.
-    const callbackUrl = `${window.location.origin}/auth/callback?role=${role}`;
+    // Encode the intended role in the callback PATH (not query params — Supabase
+    // strips custom query params from redirectTo during the OAuth round-trip).
+    // /auth/callback/owner → insert owner role
+    // /auth/callback/customer → insert customer role (default)
+    const callbackUrl = `${window.location.origin}/auth/callback/${role}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: callbackUrl,
         queryParams: {
-          // Prompt account selection every time so users can switch accounts
           prompt: "select_account",
         },
       },
