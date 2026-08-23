@@ -4,11 +4,8 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 
 const searchSchema = z.object({
-  // Supabase PKCE flow puts the code here
   code: z.string().optional(),
-  // We pass the intended role as a custom param on the redirect URL
   role: z.enum(["customer", "owner"]).optional(),
-  // Supabase error passthrough
   error: z.string().optional(),
   error_description: z.string().optional(),
 });
@@ -27,12 +24,10 @@ function AuthCallback() {
   const ran = useRef(false);
 
   useEffect(() => {
-    // Strict-mode double-fire guard
     if (ran.current) return;
     ran.current = true;
 
     async function finish() {
-      // Surface Supabase-level errors (e.g. access_denied)
       if (error) {
         console.error("[auth/callback]", error, error_description);
         void navigate({ to: "/auth", replace: true });
@@ -40,9 +35,9 @@ function AuthCallback() {
       }
 
       if (!code) {
-        // No code — might be a hash-based implicit flow (older Supabase default)
-        // onAuthStateChange in useAuth will pick it up automatically.
-        void navigate({ to: "/my-bookings", replace: true });
+        // No PKCE code — implicit flow; onAuthStateChange handles session.
+        // Redirect to auth so the user lands somewhere sensible.
+        void navigate({ to: "/auth", replace: true });
         return;
       }
 
@@ -69,7 +64,13 @@ function AuthCallback() {
         await supabase.from("user_roles").insert({ user_id: userId, role: intendedRole });
       }
 
-      void navigate({ to: "/my-bookings", replace: true });
+      // Determine final role: DB row beats URL param for returning users
+      const finalRole = existing?.role ?? intendedRole;
+
+      void navigate({
+        to: finalRole === "owner" ? "/dashboard" : "/my-bookings",
+        replace: true,
+      });
     }
 
     void finish();
@@ -78,7 +79,6 @@ function AuthCallback() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4 text-center">
-        {/* Spinner */}
         <svg
           className="size-8 animate-spin text-primary"
           xmlns="http://www.w3.org/2000/svg"

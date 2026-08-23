@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -126,19 +127,29 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const routerState = useRouterState();
+  // Dashboard has its own full-screen layout — suppress the public shell
+  const isDashboard = routerState.location.pathname.startsWith("/dashboard");
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="flex min-h-screen flex-col">
-          <SiteHeader />
-          <main className="flex-1">
-            {/* Required: nested routes render here. */}
+        {isDashboard ? (
+          // Dashboard: no SiteHeader/SiteFooter — the layout route owns the shell
+          <>
             <Outlet />
-          </main>
-          <SiteFooter />
-        </div>
-        <Toaster />
+            <Toaster />
+          </>
+        ) : (
+          <div className="flex min-h-screen flex-col">
+            <SiteHeader />
+            <main className="flex-1">
+              <Outlet />
+            </main>
+            <SiteFooter />
+            <Toaster />
+          </div>
+        )}
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleIcon } from "@/components/GoogleIcon";
 import { useAuth } from "@/hooks/useAuth";
+import { useOwnerRole } from "@/hooks/useOwnerRole";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isOwner, isLoading: roleLoading } = useOwnerRole();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [role, setRole] = useState<"customer" | "owner">("customer");
   const [email, setEmail] = useState("");
@@ -35,9 +37,12 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
 
+  // Redirect already-signed-in users to their correct area
   useEffect(() => {
-    if (user) void navigate({ to: "/my-bookings" });
-  }, [user, navigate, role]);
+    if (user && !roleLoading) {
+      void navigate({ to: isOwner ? "/dashboard" : "/my-bookings", replace: true });
+    }
+  }, [user, isOwner, roleLoading, navigate]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -56,6 +61,7 @@ function AuthPage() {
         if (data.session) {
           await supabase.from("user_roles").insert({ user_id: data.session.user.id, role });
           toast.success("Welcome to Bladeroom");
+          void navigate({ to: role === "owner" ? "/dashboard" : "/my-bookings", replace: true });
         } else {
           setSent(true);
           toast.success("Check your email to confirm your account");
