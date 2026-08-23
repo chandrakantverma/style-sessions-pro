@@ -12,15 +12,18 @@ import path from "path";
 //   [plugin:tanstack-router:code-splitter:compile-reference-file]
 //   Duplicate declaration "hot"
 
+// Detect Vercel build environment — VERCEL=1 is set automatically by Vercel.
+// Falls back to an explicit NITRO_PRESET override, then node-server for local dev.
+const nitroPreset =
+  process.env["NITRO_PRESET"] ??
+  (process.env["VERCEL"] === "1" ? "vercel" : "node-server");
+
 export default defineConfig({
   plugins: [
     tanstackStart({
       server: {
         entry: "src/server.ts",
-        // Use Vercel preset when deploying, local node server in dev.
-        // NITRO_PRESET=vercel is set automatically by Vercel's build environment.
-        // You can also set it manually: NITRO_PRESET=vercel npm run build
-        preset: process.env["NITRO_PRESET"] ?? "node-server",
+        preset: nitroPreset,
       },
     }),
     react(),
