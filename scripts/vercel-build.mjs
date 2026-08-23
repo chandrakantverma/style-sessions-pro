@@ -1,9 +1,9 @@
 /**
  * vercel-build.mjs
  *
- * Builds the app with Vite, then bundles dist/server/server.js + all its
- * node_modules into a single self-contained CJS file using esbuild.
- * Wraps it with a (req, res) → fetch adapter for Vercel's Node.js runtime.
+ * Builds with Vite, then uses esbuild to fully bundle dist/server/server.js
+ * and ALL its node_module dependencies into one self-contained CJS file.
+ * Wraps it with a (req,res)→fetch adapter for Vercel's Node.js runtime.
  * Outputs to .vercel/output/ (Vercel Build Output API v3).
  */
 
@@ -15,6 +15,7 @@ const root    = process.cwd();
 const dist    = resolve(root, "dist");
 const out     = resolve(root, ".vercel/output");
 const funcDir = join(out, "functions/__server.func");
+const esbuild = join(root, "node_modules/.bin/esbuild");
 
 // ── 1. Vite build ─────────────────────────────────────────────────────────────
 console.log("▶  Running Vite build…");
@@ -32,26 +33,17 @@ if (!existsSync(clientDir)) { console.error("✗ dist/client missing"); process.
 cpSync(clientDir, join(out, "static"), { recursive: true });
 console.log("  ✓ dist/client → .vercel/output/static");
 
-// ── 4. Bundle server into a single CJS file ───────────────────────────────────
-// We write a CJS adapter entry next to server.js so relative imports resolve.
+// ── 4. Write ESM adapter entry ────────────────────────────────────────────────
+// Pure ESM — esbuild will bundle this + server.js + all node_modules into CJS.
 const serverEntry = join(dist, "server", "server.js");
 if (!existsSync(serverEntry)) { console.error("✗ dist/server/server.js missing"); process.exit(1); }
 
-const adapterSrc = join(dist, "server", "_vercel_entry.cjs");
+const adapterSrc = join(dist, "server", "_adapter.mjs");
 writeFileSync(adapterSrc, `
-"use strict";
-// Dynamic import of the ESM server bundle
-let _handler = null;
-async function getHandler() {
-  if (!_handler) {
-    const mod = await import("./server.js");
-    const bundle = mod.default ?? mod;
-    _handler = bundle.default ?? bundle;
-  }
-  return _handler;
-}
+import { Readable } from "node:stream";
+import startBundle from "./server.js";
 
-const { Readable } = require("node:stream");
+const fetchHandler = startBundle?.default ?? startBundle;
 
 async function toWebRequest(req) {
   const proto = req.headers["x-forwarded-proto"] || "https";
@@ -87,47 +79,44 @@ async function sendResponse(webRes, res) {
   res.end();
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   try {
-    const h = await getHandler();
-    const webRes = await h.fetch(await toWebRequest(req));
+    const webRes = await fetchHandler.fetch(await toWebRequest(req));
     await sendResponse(webRes, res);
   } catch (err) {
-    const msg = err instanceof Error
-      ? err.stack || err.message
-      : String(err);
+    const msg = err instanceof Error ? (err.stack || err.message) : String(err);
     console.error("[ssr error]", msg);
     if (!res.headersSent) {
       res.statusCode = 500;
       res.setHeader("content-type", "text/plain");
-      // TEMPORARY: expose error detail so we can diagnose. Remove before prod.
-      res.end("SSR Error:\\n" + msg);
+      res.end(msg);
     }
   }
-};
+}
 `.trimStart());
 
-// Copy the whole dist/server dir so server.js + assets are next to the adapter
-cpSync(join(dist, "server"), funcDir, { recursive: true });
-
-// Write the CJS adapter as index.cjs (separate from the ESM server.js)
+// ── 5. Bundle adapter + server.js + all deps into single CJS file ─────────────
+// --bundle        : inline all imports including node_modules
+// --format=cjs    : output CommonJS (handles CJS deps like react-dom correctly)
+// --platform=node : use Node.js builtins, mark node:* as external
+// --external:node:* : keep node built-ins as require('stream') etc
+// The adapter is in dist/server/ next to server.js so relative imports resolve
 const indexCjs = join(funcDir, "index.cjs");
+console.log("  Bundling server + all deps with esbuild…");
 execSync(
-  `"${join(root, "node_modules/.bin/esbuild")}" "${adapterSrc}" \
+  `"${esbuild}" "${adapterSrc}" \
     --bundle \
     --platform=node \
     --target=node20 \
     --format=cjs \
     --outfile="${indexCjs}" \
     --external:node:* \
-    --external:./server.js \
     --log-level=warning`,
   { stdio: "inherit" }
 );
+console.log("  ✓ Bundled → __server.func/index.cjs (CJS, fully self-contained)");
 
-console.log("  ✓ Bundled adapter → __server.func/index.cjs");
-
-// .vc-config.json — use index.cjs as the handler (CJS, no type:module needed)
+// .vc-config.json
 writeFileSync(join(funcDir, ".vc-config.json"), JSON.stringify({
   runtime: "nodejs20.x",
   handler: "index.cjs",
@@ -135,13 +124,9 @@ writeFileSync(join(funcDir, ".vc-config.json"), JSON.stringify({
   shouldAddHelpers: true,
   supportsResponseStreaming: true,
 }, null, 2));
+console.log("  ✓ Wrote .vc-config.json");
 
-// package.json with type:module so Node treats server.js as ESM
-writeFileSync(join(funcDir, "package.json"), JSON.stringify({ type: "module" }, null, 2));
-
-console.log("  ✓ Wrote .vc-config.json + package.json");
-
-// ── 5. Routing config ─────────────────────────────────────────────────────────
+// ── 6. Routing config ─────────────────────────────────────────────────────────
 writeFileSync(join(out, "config.json"), JSON.stringify({
   version: 3,
   routes: [
@@ -150,6 +135,5 @@ writeFileSync(join(out, "config.json"), JSON.stringify({
     { src: "/(.*)", dest: "/__server" },
   ],
 }, null, 2));
-
 console.log("  ✓ Wrote config.json");
 console.log("\n✅ .vercel/output/ is ready");
