@@ -1,9 +1,6 @@
 /**
- * /auth/callback/owner  → handles Google OAuth for shop owners
- * /auth/callback/customer → handles Google OAuth for customers
- *
- * Supabase strips custom query params from redirectTo during OAuth,
- * so we encode the intended role in the URL path instead.
+ * Role-aware OAuth callback at /auth/callback/owner and /auth/callback/customer
+ * The role is encoded in the URL path to survive Supabase's OAuth redirect.
  */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
@@ -30,7 +27,6 @@ function AuthCallbackWithRole() {
   const { code, error, error_description } = Route.useSearch();
   const ran = useRef(false);
 
-  // Validate role from path — default to customer for unknown values
   const intendedRole: "owner" | "customer" =
     roleParam === "owner" ? "owner" : "customer";
 
@@ -40,7 +36,7 @@ function AuthCallbackWithRole() {
 
     async function finish() {
       if (error) {
-        console.error("[auth/callback]", error, error_description);
+        console.error("[auth/callback/$role]", error, error_description);
         void navigate({ to: "/auth", replace: true });
         return;
       }
@@ -54,7 +50,7 @@ function AuthCallbackWithRole() {
         await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError || !data.session) {
-        console.error("[auth/callback] exchange failed", exchangeError);
+        console.error("[auth/callback/$role] exchange failed", exchangeError);
         void navigate({ to: "/auth", replace: true });
         return;
       }
@@ -68,18 +64,22 @@ function AuthCallbackWithRole() {
         .eq("user_id", userId)
         .maybeSingle();
 
-      if (!existing) {
-        // New Google user — assign their intended role from the URL path
-        await supabase
-          .from("user_roles")
-          .insert({ user_id: userId, role: intendedRole });
+      if (existing) {
+        // Returning user — always use their existing DB role
+        void navigate({
+          to: existing.role === "owner" ? "/dashboard" : "/my-bookings",
+          replace: true,
+        });
+        return;
       }
 
-      // DB row wins for returning users; path role wins for new users
-      const finalRole = existing?.role ?? intendedRole;
+      // New user — assign role from path param
+      await supabase
+        .from("user_roles")
+        .insert({ user_id: userId, role: intendedRole });
 
       void navigate({
-        to: finalRole === "owner" ? "/dashboard" : "/my-bookings",
+        to: intendedRole === "owner" ? "/dashboard" : "/my-bookings",
         replace: true,
       });
     }
@@ -97,19 +97,8 @@ function AuthCallbackWithRole() {
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
         <p className="text-sm text-muted-foreground">Signing you in…</p>
       </div>
