@@ -124,12 +124,6 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/profile">
-                  <UserCircle className="mr-1.5 size-4" />
-                  Profile
-                </Link>
-              </Button>
               <Button asChild size="sm">
                 <Link to="/my-bookings">
                   <CalendarCheck className="mr-1.5 size-4" />

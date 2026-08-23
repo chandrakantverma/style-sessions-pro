@@ -4,7 +4,7 @@ export const CATEGORY_VALUES = ["hair", "beard", "grooming", "combo"] as const;
 
 // ── Shop profile / onboarding ─────────────────────────────────────────────────
 export const shopProfileSchema = z.object({
-  name: z.string().min(1, "Shop name is required"),
+  name: z.string().trim().min(1, "Shop name is required"),
   tagline: z.string().optional(),
   city: z.string().optional(),
   address: z.string().optional(),
@@ -75,7 +75,7 @@ export type BlockedPeriodValues = z.infer<typeof blockedPeriodSchema>;
 // ── Reschedule form ───────────────────────────────────────────────────────────
 export const rescheduleSchema = z.object({
   starts_at: z.string().min(1, "Date/time is required").refine(
-    (v) => new Date(v) > new Date(),
+    (v) => !isNaN(new Date(v).getTime()) && new Date(v) > new Date(),
     { message: "Appointment must be in the future" }
   ),
 });
