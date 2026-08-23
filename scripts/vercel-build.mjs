@@ -1,26 +1,14 @@
 /**
  * vercel-build.mjs
  *
- * TanStack Start (1.168.x) always outputs to dist/client + dist/server regardless
- * of NITRO_PRESET. This script runs after `vite build` and restructures the output
- * into Vercel's Build Output API v3 format:
+ * TanStack Start (1.168.x) always outputs to dist/client + dist/server.
+ * This script restructures the output into Vercel Build Output API v3 format.
  *
- *   .vercel/output/
- *     config.json                    — routing config
- *     static/                        — served directly by Vercel's CDN
- *     functions/
- *       __server.func/
- *         index.js                   — Node (req,res) adapter → fetch handler
- *         server.js + assets/        — TanStack Start SSR bundle
- *         .vc-config.json            — Vercel function config
+ * server.js is ESM. Vercel needs either:
+ *   - A package.json with "type":"module" in the function dir, OR
+ *   - A CJS wrapper that dynamic-imports the ESM bundle
  *
- * TanStack Start's server.js exports a Web Fetch API handler:
- *   export default { fetch(request: Request): Promise<Response> }
- *
- * Vercel's Node.js runtime calls: handler(req: IncomingMessage, res: ServerResponse)
- * The index.js adapter bridges between the two.
- *
- * Reference: https://vercel.com/docs/build-output-api/v3
+ * We use option A: ship a package.json alongside the ESM bundle.
  */
 
 import { cpSync, mkdirSync, rmSync, writeFileSync, existsSync } from "fs";
@@ -30,91 +18,71 @@ import { execSync } from "child_process";
 const root = process.cwd();
 const dist = resolve(root, "dist");
 const out = resolve(root, ".vercel/output");
+const funcDir = join(out, "functions/__server.func");
 
-// ── 1. Run the normal Vite build ─────────────────────────────────────────────
+// ── 1. Vite build ────────────────────────────────────────────────────────────
 console.log("▶ Building with Vite…");
 execSync("npm run build", { stdio: "inherit", env: { ...process.env } });
 
-// ── 2. Clean previous Vercel output ──────────────────────────────────────────
+// ── 2. Clean + scaffold output dirs ──────────────────────────────────────────
 console.log("▶ Preparing .vercel/output…");
 rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, "static"), { recursive: true });
-mkdirSync(join(out, "functions/__server.func"), { recursive: true });
+mkdirSync(funcDir, { recursive: true });
 
-// ── 3. Copy static assets (client build) → .vercel/output/static ─────────────
+// ── 3. Static assets ─────────────────────────────────────────────────────────
 const clientDir = join(dist, "client");
-if (!existsSync(clientDir)) {
-  console.error("✗ dist/client not found — did the build succeed?");
-  process.exit(1);
-}
+if (!existsSync(clientDir)) { console.error("✗ dist/client missing"); process.exit(1); }
 cpSync(clientDir, join(out, "static"), { recursive: true });
-console.log("  ✓ Copied dist/client → .vercel/output/static");
+console.log("  ✓ dist/client → .vercel/output/static");
 
-// ── 4. Copy server bundle → .vercel/output/functions/__server.func ───────────
+// ── 4. Server bundle ─────────────────────────────────────────────────────────
 const serverDir = join(dist, "server");
-if (!existsSync(serverDir)) {
-  console.error("✗ dist/server not found — did the build succeed?");
-  process.exit(1);
-}
-cpSync(serverDir, join(out, "functions/__server.func"), { recursive: true });
+if (!existsSync(serverDir)) { console.error("✗ dist/server missing"); process.exit(1); }
+cpSync(serverDir, funcDir, { recursive: true });
+console.log("  ✓ dist/server → .vercel/output/functions/__server.func");
 
-// Write the Node.js adapter that bridges (req, res) → Web Fetch API.
-// TanStack Start's server.js exports { default: { fetch(req): Promise<Response> } }
-// Vercel's Node.js runtime calls module.exports(req, res).
-writeFileSync(
-  join(out, "functions/__server.func/index.js"),
-  `import { Readable } from "node:stream";
-import startHandler from "./server.js";
+// package.json with "type":"module" so Node treats .js files as ESM
+writeFileSync(join(funcDir, "package.json"), JSON.stringify({ type: "module" }, null, 2));
 
-// The actual fetch handler exported by TanStack Start
-const handler = startHandler.default ?? startHandler;
+// The entry point — adapts Vercel's (req, res) to TanStack Start's fetch handler
+writeFileSync(join(funcDir, "index.js"), `
+import { Readable } from "node:stream";
+import startBundle from "./server.js";
 
-/**
- * Convert a Node.js IncomingMessage to a Web API Request.
- */
+const fetchHandler = startBundle?.default ?? startBundle;
+
 async function toWebRequest(req) {
-  const protocol = req.headers["x-forwarded-proto"] || "https";
-  const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
-  const url = new URL(req.url, protocol + "://" + host);
+  const proto = req.headers["x-forwarded-proto"] ?? "https";
+  const host  = req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost";
+  const url   = new URL(req.url ?? "/", \`\${proto}://\${host}\`);
 
   const headers = new Headers();
-  for (const [key, value] of Object.entries(req.headers)) {
-    if (value == null) continue;
-    if (Array.isArray(value)) {
-      for (const v of value) headers.append(key, v);
-    } else {
-      headers.set(key, value);
-    }
+  for (const [k, v] of Object.entries(req.headers)) {
+    if (v == null) continue;
+    Array.isArray(v) ? v.forEach(val => headers.append(k, val)) : headers.set(k, v);
   }
 
-  const method = (req.method || "GET").toUpperCase();
+  const method  = (req.method ?? "GET").toUpperCase();
   const hasBody = method !== "GET" && method !== "HEAD";
-  const body = hasBody ? Readable.toWeb(req) : undefined;
 
   return new Request(url.toString(), {
     method,
     headers,
-    ...(body ? { body, duplex: "half" } : {}),
+    ...(hasBody ? { body: Readable.toWeb(req), duplex: "half" } : {}),
   });
 }
 
-/**
- * Stream a Web API Response back into a Node.js ServerResponse.
- */
-async function sendWebResponse(webRes, res) {
+async function sendResponse(webRes, res) {
   res.statusCode = webRes.status;
-  for (const [key, value] of webRes.headers.entries()) {
-    res.setHeader(key, value);
-  }
+  webRes.headers.forEach((v, k) => res.setHeader(k, v));
   if (webRes.body) {
     const reader = webRes.body.getReader();
     try {
-      while (true) {
+      for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        await new Promise((resolve, reject) => {
-          res.write(value, (err) => (err ? reject(err) : resolve()));
-        });
+        await new Promise((ok, fail) => res.write(value, e => e ? fail(e) : ok(undefined)));
       }
     } finally {
       reader.releaseLock();
@@ -123,16 +91,13 @@ async function sendWebResponse(webRes, res) {
   res.end();
 }
 
-/**
- * Vercel serverless function entry point.
- */
-export default async function vercelHandler(req, res) {
+export default async function handler(req, res) {
   try {
-    const webRequest = await toWebRequest(req);
-    const webResponse = await handler.fetch(webRequest);
-    await sendWebResponse(webResponse, res);
+    const webReq = await toWebRequest(req);
+    const webRes = await fetchHandler.fetch(webReq);
+    await sendResponse(webRes, res);
   } catch (err) {
-    console.error("[ssr error]", err);
+    console.error("[ssr crash]", err);
     if (!res.headersSent) {
       res.statusCode = 500;
       res.setHeader("content-type", "text/plain");
@@ -140,53 +105,28 @@ export default async function vercelHandler(req, res) {
     }
   }
 }
-`
-);
+`.trimStart());
 
-// Write .vc-config.json for the function
-writeFileSync(
-  join(out, "functions/__server.func/.vc-config.json"),
-  JSON.stringify(
-    {
-      runtime: "nodejs20.x",
-      handler: "index.js",
-      launcherType: "Nodejs",
-      shouldAddHelpers: true,
-      supportsResponseStreaming: true,
-    },
-    null,
-    2,
-  ),
-);
-console.log("  ✓ Copied dist/server → .vercel/output/functions/__server.func");
+// .vc-config.json
+writeFileSync(join(funcDir, ".vc-config.json"), JSON.stringify({
+  runtime: "nodejs20.x",
+  handler: "index.js",
+  launcherType: "Nodejs",
+  shouldAddHelpers: true,
+  supportsResponseStreaming: true,
+}, null, 2));
 
-// ── 5. Write Vercel routing config ───────────────────────────────────────────
-writeFileSync(
-  join(out, "config.json"),
-  JSON.stringify(
-    {
-      version: 3,
-      routes: [
-        // Immutable cache for hashed assets
-        {
-          src: "^/assets/(.*)$",
-          headers: { "cache-control": "public, max-age=31536000, immutable" },
-          continue: true,
-        },
-        // Serve static files (favicon, robots.txt, etc.) directly
-        {
-          handle: "filesystem",
-        },
-        // All other requests → SSR function
-        {
-          src: "/(.*)",
-          dest: "/__server",
-        },
-      ],
-    },
-    null,
-    2,
-  ),
-);
-console.log("  ✓ Wrote .vercel/output/config.json");
+console.log("  ✓ Wrote index.js + package.json + .vc-config.json");
+
+// ── 5. Routing config ─────────────────────────────────────────────────────────
+writeFileSync(join(out, "config.json"), JSON.stringify({
+  version: 3,
+  routes: [
+    { src: "^/assets/(.*)$", headers: { "cache-control": "public, max-age=31536000, immutable" }, continue: true },
+    { handle: "filesystem" },
+    { src: "/(.*)", dest: "/__server" },
+  ],
+}, null, 2));
+
+console.log("  ✓ Wrote config.json");
 console.log("\n✅ Vercel build output ready at .vercel/output/");
