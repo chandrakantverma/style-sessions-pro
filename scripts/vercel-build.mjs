@@ -93,11 +93,15 @@ module.exports = async function handler(req, res) {
     const webRes = await h.fetch(await toWebRequest(req));
     await sendResponse(webRes, res);
   } catch (err) {
-    console.error("[ssr error]", err);
+    const msg = err instanceof Error
+      ? err.stack || err.message
+      : String(err);
+    console.error("[ssr error]", msg);
     if (!res.headersSent) {
       res.statusCode = 500;
       res.setHeader("content-type", "text/plain");
-      res.end("Internal Server Error");
+      // TEMPORARY: expose error detail so we can diagnose. Remove before prod.
+      res.end("SSR Error:\\n" + msg);
     }
   }
 };
