@@ -28,11 +28,15 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build
+      - name: Build (Production)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NITRO_PRESET: vercel
+
+      - name: Build (Preview)
+        if: github.event_name == 'pull_request'
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
         env:
           NITRO_PRESET: vercel
 
