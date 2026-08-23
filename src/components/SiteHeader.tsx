@@ -3,6 +3,7 @@ import { Menu } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useOwnerRole } from "@/hooks/useOwnerRole";
 
 const NAV = [
   { to: "/styles", label: "Styles" },
@@ -12,6 +13,7 @@ const NAV = [
 
 export function SiteHeader() {
   const { user, signOut } = useAuth();
+  const { isOwner } = useOwnerRole();
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,6 +39,11 @@ export function SiteHeader() {
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
             <>
+              {isOwner && (
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/dashboard">Dashboard</Link>
+                </Button>
+              )}
               <Button asChild variant="ghost" size="sm">
                 <Link to="/my-bookings">My Bookings</Link>
               </Button>
@@ -85,6 +92,15 @@ export function SiteHeader() {
             >
               {user ? "My Bookings" : "Sign in"}
             </Link>
+            {user && isOwner && (
+              <Link
+                to="/dashboard"
+                onClick={() => setOpen(false)}
+                className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground"
+              >
+                Dashboard
+              </Link>
+            )}
           </div>
         </div>
       )}

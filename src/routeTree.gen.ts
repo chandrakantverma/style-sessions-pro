@@ -15,6 +15,12 @@ import { Route as MyBookingsRouteImport } from './routes/my-bookings'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as StylesRouteImport } from './routes/styles'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardLayoutRouteImport } from './routes/dashboard/_layout'
+import { Route as DashboardAvailabilityRouteImport } from './routes/dashboard/availability'
+import { Route as DashboardBookingsRouteImport } from './routes/dashboard/bookings'
+import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
+import { Route as DashboardServicesRouteImport } from './routes/dashboard/services'
 import { Route as ShopsIndexRouteImport } from './routes/shops.index'
 import { Route as ShopsShopIdRouteImport } from './routes/shops.$shopId'
 
@@ -48,6 +54,36 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthRoute,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
+  id: '/dashboard/_layout',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardAvailabilityRoute = DashboardAvailabilityRouteImport.update({
+  id: '/dashboard/availability',
+  path: '/dashboard/availability',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardBookingsRoute = DashboardBookingsRouteImport.update({
+  id: '/dashboard/bookings',
+  path: '/dashboard/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardProfileRoute = DashboardProfileRouteImport.update({
+  id: '/dashboard/profile',
+  path: '/dashboard/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardServicesRoute = DashboardServicesRouteImport.update({
+  id: '/dashboard/services',
+  path: '/dashboard/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShopsIndexRoute = ShopsIndexRouteImport.update({
   id: '/shops/',
   path: '/shops/',
@@ -66,7 +102,13 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dashboard': typeof DashboardLayoutRoute
+  '/dashboard/availability': typeof DashboardAvailabilityRoute
+  '/dashboard/bookings': typeof DashboardBookingsRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/services': typeof DashboardServicesRoute
   '/shops/$shopId': typeof ShopsShopIdRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/shops/': typeof ShopsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -76,6 +118,11 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/availability': typeof DashboardAvailabilityRoute
+  '/dashboard/bookings': typeof DashboardBookingsRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/services': typeof DashboardServicesRoute
   '/shops/$shopId': typeof ShopsShopIdRoute
   '/shops': typeof ShopsIndexRoute
 }
@@ -87,7 +134,13 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/styles': typeof StylesRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/dashboard/_layout': typeof DashboardLayoutRoute
+  '/dashboard/availability': typeof DashboardAvailabilityRoute
+  '/dashboard/bookings': typeof DashboardBookingsRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
+  '/dashboard/services': typeof DashboardServicesRoute
   '/shops/$shopId': typeof ShopsShopIdRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/shops/': typeof ShopsIndexRoute
 }
 export interface FileRouteTypes {
@@ -99,7 +152,13 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/styles'
     | '/auth/callback'
+    | '/dashboard'
+    | '/dashboard/availability'
+    | '/dashboard/bookings'
+    | '/dashboard/profile'
+    | '/dashboard/services'
     | '/shops/$shopId'
+    | '/dashboard/'
     | '/shops/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -109,6 +168,11 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/styles'
     | '/auth/callback'
+    | '/dashboard'
+    | '/dashboard/availability'
+    | '/dashboard/bookings'
+    | '/dashboard/profile'
+    | '/dashboard/services'
     | '/shops/$shopId'
     | '/shops'
   id:
@@ -119,7 +183,13 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/styles'
     | '/auth/callback'
+    | '/dashboard/_layout'
+    | '/dashboard/availability'
+    | '/dashboard/bookings'
+    | '/dashboard/profile'
+    | '/dashboard/services'
     | '/shops/$shopId'
+    | '/dashboard/'
     | '/shops/'
   fileRoutesById: FileRoutesById
 }
@@ -129,7 +199,13 @@ export interface RootRouteChildren {
   MyBookingsRoute: typeof MyBookingsRoute
   PricingRoute: typeof PricingRoute
   StylesRoute: typeof StylesRoute
+  DashboardLayoutRoute: typeof DashboardLayoutRoute
+  DashboardAvailabilityRoute: typeof DashboardAvailabilityRoute
+  DashboardBookingsRoute: typeof DashboardBookingsRoute
+  DashboardProfileRoute: typeof DashboardProfileRoute
+  DashboardServicesRoute: typeof DashboardServicesRoute
   ShopsShopIdRoute: typeof ShopsShopIdRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
   ShopsIndexRoute: typeof ShopsIndexRoute
 }
 
@@ -177,6 +253,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/_layout': {
+      id: '/dashboard/_layout'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/availability': {
+      id: '/dashboard/availability'
+      path: '/dashboard/availability'
+      fullPath: '/dashboard/availability'
+      preLoaderRoute: typeof DashboardAvailabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/bookings': {
+      id: '/dashboard/bookings'
+      path: '/dashboard/bookings'
+      fullPath: '/dashboard/bookings'
+      preLoaderRoute: typeof DashboardBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/profile': {
+      id: '/dashboard/profile'
+      path: '/dashboard/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/services': {
+      id: '/dashboard/services'
+      path: '/dashboard/services'
+      fullPath: '/dashboard/services'
+      preLoaderRoute: typeof DashboardServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shops/': {
       id: '/shops/'
       path: '/shops'
@@ -210,7 +328,13 @@ const rootRouteChildren: RootRouteChildren = {
   MyBookingsRoute: MyBookingsRoute,
   PricingRoute: PricingRoute,
   StylesRoute: StylesRoute,
+  DashboardLayoutRoute: DashboardLayoutRoute,
+  DashboardAvailabilityRoute: DashboardAvailabilityRoute,
+  DashboardBookingsRoute: DashboardBookingsRoute,
+  DashboardProfileRoute: DashboardProfileRoute,
+  DashboardServicesRoute: DashboardServicesRoute,
   ShopsShopIdRoute: ShopsShopIdRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
   ShopsIndexRoute: ShopsIndexRoute,
 }
 export const routeTree = rootRouteImport

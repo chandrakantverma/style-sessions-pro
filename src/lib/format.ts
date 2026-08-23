@@ -20,4 +20,5 @@ export const CATEGORY_LABELS: Record<string, string> = {
   hair: "Hairstyle",
   beard: "Beard & Shave",
   grooming: "Beauty & Grooming",
+  combo: "Combo",
 };

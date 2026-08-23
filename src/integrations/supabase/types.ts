@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_periods: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          label: string | null
+          shop_id: string
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          label?: string | null
+          shop_id: string
+          starts_at: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          label?: string | null
+          shop_id?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_periods_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           created_at: string
@@ -135,6 +170,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "services_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_availability: {
+        Row: {
+          closes_at: string
+          day_of_week: number
+          id: string
+          is_open: boolean
+          opens_at: string
+          shop_id: string
+        }
+        Insert: {
+          closes_at?: string
+          day_of_week: number
+          id?: string
+          is_open?: boolean
+          opens_at?: string
+          shop_id: string
+        }
+        Update: {
+          closes_at?: string
+          day_of_week?: number
+          id?: string
+          is_open?: boolean
+          opens_at?: string
+          shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_availability_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
