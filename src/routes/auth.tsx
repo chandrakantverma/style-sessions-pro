@@ -9,6 +9,9 @@ import { GoogleIcon } from "@/components/GoogleIcon";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnerRole } from "@/hooks/useOwnerRole";
 
+// localStorage key used to persist intended role across OAuth redirect
+const ROLE_STORAGE_KEY = "bladeroom_oauth_intended_role";
+
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
@@ -44,25 +47,33 @@ function AuthPage() {
     }
   }, [user, isOwner, roleLoading, navigate]);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setBusy(true);
     try {
       if (mode === "signup") {
+        // Pass intended_role in user metadata so it's stored in the session
+        // and available even if email confirmation is required
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
             data: { full_name: fullName, intended_role: role },
           },
         });
         if (error) throw error;
+
         if (data.session) {
-          await supabase.from("user_roles").insert({ user_id: data.session.user.id, role });
+          // Immediate session (no email confirmation required)
+          await supabase.from("user_roles").insert({
+            user_id: data.session.user.id,
+            role,
+          });
           toast.success("Welcome to Bladeroom");
           void navigate({ to: role === "owner" ? "/dashboard" : "/my-bookings", replace: true });
         } else {
+          // Email confirmation flow — role stored in user_metadata, callback will pick it up
           setSent(true);
           toast.success("Check your email to confirm your account");
         }
@@ -70,6 +81,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         toast.success("Signed in");
+        // Redirect is handled by the useEffect watching user + isOwner
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong");
@@ -79,14 +91,13 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
-    // `role` is the currently selected state — set by the "I'm booking" / "I own a shop"
-    // toggle above. The callback URL encodes it in the path so Supabase preserves it.
-    const selectedRole = role; // capture at call time (not closure over stale state)
-    const callbackUrl = `${window.location.origin}/auth/callback/${selectedRole}`;
+    // Store the intended role in localStorage before navigating away.
+    // localStorage survives full-page OAuth redirects (unlike sessionStorage
+    // which may be cleared on cross-origin navigation in some browsers).
+    localStorage.setItem(ROLE_STORAGE_KEY, role);
 
-    // Belt-and-suspenders: also store in sessionStorage in case Supabase
-    // rewrites the redirect URL to the base /auth/callback path (strips the path suffix)
-    sessionStorage.setItem("bladeroom_intended_role", selectedRole);
+    // Also encode role in the callback path as primary mechanism
+    const callbackUrl = `${window.location.origin}/auth/callback`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -96,12 +107,14 @@ function AuthPage() {
       },
     });
     if (error) {
+      localStorage.removeItem(ROLE_STORAGE_KEY);
       toast.error("Google sign-in failed. Please try again.");
     }
   }
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-5 py-20">
+      {/* Role indicator */}
       <p className="overline">{role === "owner" ? "Shop owner" : "Customer"}</p>
       <h1 className="mt-3 text-5xl">{mode === "signin" ? "Sign in" : "Create account"}</h1>
       <p className="mt-3 text-sm text-muted-foreground">
@@ -110,10 +123,12 @@ function AuthPage() {
           : "Book chairs, track appointments and cancel when plans change."}
       </p>
 
+      {/* Role selector */}
       <div className="mt-8 grid grid-cols-2 gap-2">
         {(["customer", "owner"] as const).map((option) => (
           <button
             key={option}
+            type="button"
             onClick={() => setRole(option)}
             className={`rounded border px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] transition-colors ${
               role === option
@@ -126,6 +141,7 @@ function AuthPage() {
         ))}
       </div>
 
+      {/* Email / password form */}
       <form onSubmit={handleSubmit} className="panel mt-6 space-y-4 rounded-lg p-6">
         {mode === "signup" && (
           <div>
@@ -172,6 +188,7 @@ function AuthPage() {
           <span className="h-px flex-1 bg-border" />
         </div>
 
+        {/* Google OAuth button — clearly shows which role will be used */}
         <Button
           type="button"
           variant="outline"
@@ -186,20 +203,18 @@ function AuthPage() {
         </Button>
 
         <p className="text-center text-[0.65rem] text-muted-foreground">
-          Google sign-in will use the role selected above.{" "}
-          {role === "owner"
-            ? "You'll get shop management access."
-            : "You'll be able to book appointments."}
+          Select your role above before continuing with Google.
         </p>
 
         {sent && (
           <p className="text-xs text-muted-foreground">
-            We sent a confirmation link to {email}. Click it to finish signing up.
+            We sent a confirmation link to <strong>{email}</strong>. Click it to finish signing up.
           </p>
         )}
       </form>
 
       <button
+        type="button"
         onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
         className="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-primary"
       >
