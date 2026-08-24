@@ -13,7 +13,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Store, User } from "lucide-react";
 
 const searchSchema = z.object({
@@ -80,19 +79,31 @@ function AuthCallback() {
         return;
       }
 
-      // 2. New user — use URL param if Supabase preserved it
-      if (roleParam === "owner" || roleParam === "customer") {
+      // 2. New user — determine intended role from (in priority order):
+      //    a) URL query param (if Supabase preserved it)
+      //    b) sessionStorage set before OAuth redirect
+      //    c) Show role selection prompt (cannot determine role)
+      const storedRole = sessionStorage.getItem("bladeroom_intended_role") as "owner" | "customer" | null;
+      sessionStorage.removeItem("bladeroom_intended_role"); // consume it
+
+      const resolvedRole = roleParam === "owner" || roleParam === "customer"
+        ? roleParam
+        : storedRole === "owner" || storedRole === "customer"
+        ? storedRole
+        : null;
+
+      if (resolvedRole) {
         await supabase
           .from("user_roles")
-          .insert({ user_id: userId, role: roleParam });
+          .insert({ user_id: userId, role: resolvedRole });
         void navigate({
-          to: roleParam === "owner" ? "/dashboard" : "/my-bookings",
+          to: resolvedRole === "owner" ? "/dashboard" : "/my-bookings",
           replace: true,
         });
         return;
       }
 
-      // 3. Role unknown — show selection prompt
+      // 3. Role truly unknown — show selection prompt
       setPendingUserId(userId);
     }
 

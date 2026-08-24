@@ -83,6 +83,11 @@ function AuthPage() {
     // toggle above. The callback URL encodes it in the path so Supabase preserves it.
     const selectedRole = role; // capture at call time (not closure over stale state)
     const callbackUrl = `${window.location.origin}/auth/callback/${selectedRole}`;
+
+    // Belt-and-suspenders: also store in sessionStorage in case Supabase
+    // rewrites the redirect URL to the base /auth/callback path (strips the path suffix)
+    sessionStorage.setItem("bladeroom_intended_role", selectedRole);
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
