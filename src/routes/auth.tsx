@@ -79,11 +79,10 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
-    // Encode the intended role in the callback path.
-    // Supabase preserves the full redirectTo path when it redirects back.
-    // /auth/callback/owner  → new users get owner role
-    // /auth/callback/customer → new users get customer role
-    const callbackUrl = `${window.location.origin}/auth/callback/${role}`;
+    // `role` is the currently selected state — set by the "I'm booking" / "I own a shop"
+    // toggle above. The callback URL encodes it in the path so Supabase preserves it.
+    const selectedRole = role; // capture at call time (not closure over stale state)
+    const callbackUrl = `${window.location.origin}/auth/callback/${selectedRole}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -168,10 +167,25 @@ function AuthPage() {
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <Button type="button" variant="outline" className="w-full gap-2" onClick={() => void handleGoogle()}>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() => void handleGoogle()}
+        >
           <GoogleIcon className="size-4 shrink-0" />
           Continue with Google
+          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+            {role === "owner" ? "Owner" : "Customer"}
+          </span>
         </Button>
+
+        <p className="text-center text-[0.65rem] text-muted-foreground">
+          Google sign-in will use the role selected above.{" "}
+          {role === "owner"
+            ? "You'll get shop management access."
+            : "You'll be able to book appointments."}
+        </p>
 
         {sent && (
           <p className="text-xs text-muted-foreground">
