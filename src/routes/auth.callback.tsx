@@ -2,9 +2,10 @@
  * OAuth callback at /auth/callback
  *
  * Role resolution priority (for new users with no DB row):
- *   1. localStorage "bladeroom_oauth_intended_role" — set before OAuth redirect
- *   2. user.user_metadata.intended_role — set during email sign-up
- *   3. Role selection prompt — absolute fallback
+ *   1. URL `role` param — embedded before OAuth redirect, survives cross-origin redirects
+ *   2. localStorage "bladeroom_oauth_intended_role" — secondary fallback (may be cleared by ITP/ETP)
+ *   3. user.user_metadata.intended_role — set during email sign-up
+ *   4. Role selection prompt — absolute fallback
  *
  * For returning users: DB row always wins.
  */
@@ -20,6 +21,7 @@ const searchSchema = z.object({
   code: z.string().optional(),
   error: z.string().optional(),
   error_description: z.string().optional(),
+  role: z.enum(["owner", "customer"]).optional(),
 });
 
 export const Route = createFileRoute("/auth/callback")({
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/auth/callback")({
 
 function AuthCallback() {
   const navigate = useNavigate();
-  const { code, error, error_description } = Route.useSearch();
+  const { code, error, error_description, role: urlRole } = Route.useSearch();
   const ran = useRef(false);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
@@ -102,14 +104,16 @@ function AuthCallback() {
       }
 
       // ── 2. New user — resolve intended role ───────────────────────────────
-      // Priority: localStorage (set before OAuth) → user_metadata (set on sign-up)
+      // Priority: URL param (most reliable) → localStorage → user_metadata (set on sign-up)
       const storedRole = localStorage.getItem(ROLE_STORAGE_KEY) as "owner" | "customer" | null;
       localStorage.removeItem(ROLE_STORAGE_KEY); // consume — one-time use
 
       const metaRole = data.session.user.user_metadata?.["intended_role"] as string | undefined;
 
       const resolvedRole: "owner" | "customer" | null =
-        storedRole === "owner" || storedRole === "customer"
+        urlRole === "owner" || urlRole === "customer"
+          ? urlRole
+          : storedRole === "owner" || storedRole === "customer"
           ? storedRole
           : metaRole === "owner" || metaRole === "customer"
           ? metaRole

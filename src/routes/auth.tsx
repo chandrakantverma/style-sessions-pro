@@ -97,7 +97,7 @@ function AuthPage() {
     localStorage.setItem(ROLE_STORAGE_KEY, role);
 
     // Also encode role in the callback path as primary mechanism
-    const callbackUrl = `${window.location.origin}/auth/callback`;
+    const callbackUrl = `${window.location.origin}/auth/callback?role=${role}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
