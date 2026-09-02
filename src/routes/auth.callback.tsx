@@ -65,13 +65,34 @@ function AuthCallback() {
       const userId = data.session.user.id;
 
       // ── 1. Check existing DB role (returning user) ────────────────────────
-      const { data: existing } = await supabase
+      const { data: existing, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
         .maybeSingle();
 
-      if (existing) {
+      if (roleError) {
+        // Query failed — log and retry once for transient errors (e.g., RLS timing)
+        console.error("[auth/callback] role lookup failed, retrying...", roleError);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const { data: retryExisting, error: retryError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (retryError) {
+          console.error("[auth/callback] role lookup retry failed", retryError);
+          // Fall through to role resolution via localStorage/metadata
+        } else if (retryExisting) {
+          void navigate({
+            to: retryExisting.role === "owner" ? "/dashboard" : "/my-bookings",
+            replace: true,
+          });
+          return;
+        }
+      } else if (existing) {
         // Returning user — always use their stored role
         void navigate({
           to: existing.role === "owner" ? "/dashboard" : "/my-bookings",
